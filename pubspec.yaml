@@ -1,0 +1,43 @@
+name: skyops
+description: "SkyOps - Sistema de Control de Vuelos de un Aeropuerto"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Networking
+  dio: ^5.4.3
+
+  # Estado
+  provider: ^6.1.2
+
+  # Navegación
+  go_router: ^14.2.0
+
+  # Almacenamiento seguro (tokens JWT)
+  flutter_secure_storage: ^9.2.2
+
+  # Utilidades de fecha/formato
+  intl: ^0.20.2
+
+  # Login con Google
+  google_sign_in: ^6.2.1
+
+  # Selección de foto de perfil (galería/cámara, funciona en móvil y web)
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
