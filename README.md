@@ -1,18 +1,125 @@
-# SkyOps — Sistema de Control de Vuelos de un Aeropuerto
+# ✈️ SkyOps — Sistema de Control de Vuelos de un Aeropuerto
 
-App móvil en **Flutter** que consume una API REST propia desarrollada en **Django REST Framework**, con autenticación JWT, sección pública, sección privada protegida por sesión y control de acceso por rol.
+App móvil desarrollada en **Flutter** que consume una API REST propia construida en **Django REST Framework**, con autenticación JWT, sección pública, sección privada protegida por sesión y control de acceso real por rol de usuario.
+
+Proyecto académico — gestión integral de operaciones aeroportuarias: vuelos, infraestructura, flota, pasajeros/personal y administración del sistema, sobre 25 módulos CRUD conectados a la API real.
+
+## Índice
+
+- [Características principales](#características-principales)
+- [Tecnologías](#tecnologías)
+- [Arquitectura del proyecto](#arquitectura-del-proyecto)
+- [Módulos del sistema](#módulos-del-sistema)
+- [Roles y control de acceso](#roles-y-control-de-acceso)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Configuración de la API](#configuración-de-la-api)
+- [Credenciales de prueba](#credenciales-de-prueba)
+- [Comandos útiles](#comandos-útiles)
+- [Evidencia funcional](#evidencia-funcional)
+- [Equipo](#equipo)
+
+## Características principales
+
+- **Sección pública** sin necesidad de iniciar sesión: pantalla de bienvenida, carrusel informativo de los 5 módulos del sistema, detalle de cada módulo y pantalla de contacto.
+- **Autenticación real contra la API**: login por correo, registro con datos de perfil extendidos (documento, fecha de nacimiento, país, teléfono), inicio de sesión con Google, y recuperación de sesión persistente.
+- **Sesión con JWT**: token guardado de forma segura con `flutter_secure_storage`, adjuntado automáticamente a cada request y refrescado solo cuando expira (sin pedirle al usuario que vuelva a loguearse a media navegación).
+- **Rutas protegidas**: ninguna pantalla privada es accesible sin sesión válida — lo controla el `redirect` de GoRouter, no solo un chequeo visual.
+- **Control de acceso por rol real**, no cosmético: Administrador, Operador y Pasajero ven y pueden hacer cosas distintas porque el propio backend lo exige por endpoint, y la app oculta/bloquea antes de intentar la acción.
+- **25 módulos CRUD** contra la API real (listar, crear, editar, eliminar según el rol), agrupados por categoría operativa.
+- **Reserva de vuelos de punta a punta** para pasajeros: búsqueda de vuelos por origen/destino/fecha, mapa de asientos interactivo, y auto-vinculación de su perfil de pasajero sin depender de un administrador.
+- **Notificaciones en tiempo real de uso** (no push, pero sí reactivas): cuando un administrador cambia el estado de una reserva (confirmada, cancelada, abordada), el pasajero recibe una notificación automática, con contador de no leídas en la campana del panel principal.
+- **Contenido público editable por el administrador**: textos e imágenes del carrusel público, la pantalla de login y las ofertas del dashboard se administran desde la propia app, sin tocar código.
+- **UX cuidada**: indicadores de carga, `SnackBar` de éxito/error, validaciones de formulario, diálogos de confirmación antes de eliminar, y un diseño oscuro consistente en toda la app.
+
+## Tecnologías
+
+| Categoría | Paquete |
+|---|---|
+| Framework | Flutter (Dart) |
+| HTTP / API | `dio` |
+| Navegación | `go_router` (con guards de sesión) |
+| Estado | `provider` |
+| Sesión / tokens | `flutter_secure_storage` |
+| Fechas y formatos | `intl` |
+| Login social | `google_sign_in` |
+| Selección de imagen | `image_picker` |
+| Backend | Django REST Framework + JWT (`simplejwt`) |
+
+## Arquitectura del proyecto
+
+Arquitectura limpia por capas: `data` (acceso a la API) → `domain` (modelos y contratos) → `presentation` (UI y estado), con `core` y `theme` como utilidades transversales.
+
+```
+lib/
+├── main.dart                        ← inyección de dependencias (Dio → Repositorios → Providers)
+│
+├── data/
+│   ├── remote/
+│   │   ├── api/dio_client.dart      ← instancia Dio + interceptores
+│   │   ├── dto/                     ← un DTO por entidad (mapeo JSON ⇄ modelo)
+│   │   └── interceptor/auth_interceptor.dart
+│   ├── local/secure_storage.dart    ← wrapper de FlutterSecureStorage
+│   └── repository/                  ← implementación de cada repositorio (25 entidades + auth)
+│
+├── domain/
+│   ├── model/                       ← modelos de dominio
+│   └── repository/                  ← contratos (interfaces)
+│
+├── presentation/
+│   ├── navigation/app_router.dart   ← GoRouter con guard de sesión y roles
+│   ├── screens/
+│   │   ├── public/                  ← sección pública (sin login)
+│   │   ├── auth/                    ← splash, login, registro, perfil
+│   │   ├── home/                    ← dashboard privado + menú principal
+│   │   ├── operaciones/             ← vuelos, horarios, escalas, incidentes, asignaciones
+│   │   ├── infraestructura/         ← aeropuertos, puertas, terminales, pistas
+│   │   ├── flota/                   ← aeronaves, tipos, mantenimientos, certificaciones
+│   │   ├── personas/                ← pasajeros, reservas, tripulantes, equipajes
+│   │   └── administracion/          ← aerolíneas, notificaciones, usuarios, auditoría, contenido público
+│   ├── providers/                   ← estado (ChangeNotifier) por entidad
+│   └── widgets/                     ← componentes compartidos (tarjetas, overlays, diálogos)
+│
+├── theme/                           ← Material 3, paleta oscura + azul
+└── core/
+    ├── config/app_config.dart       ← URL base de la API (único lugar a cambiar)
+    ├── error/api_exception.dart
+    └── utils/{formatters,validators}.dart
+```
+
+## Módulos del sistema
+
+25 entidades agrupadas en 5 categorías, cada una con listado, formulario de creación/edición y (según rol) eliminación:
+
+**Operaciones de vuelo** — Vuelos, Horarios, Escalas, Incidentes, Asignaciones de tripulación, Asignaciones de pista.
+**Infraestructura del aeropuerto** — Aeropuertos, Puertas de embarque, Terminales, Pistas.
+**Flota y mantenimiento** — Aeronaves, Tipos de aeronave, Mantenimientos, Certificaciones.
+**Pasajeros y personal** — Pasajeros, Reservas, Tripulantes, Equipajes, Tarjetas de embarque, Categorías de pasajero.
+**Administración del sistema** — Aerolíneas, Notificaciones, Perfiles de usuario, Sesiones de usuario, Registro de auditoría, Contenido público (banners e imágenes editables).
+
+## Roles y control de acceso
+
+El backend expone permisos reales por endpoint (`airport/permissions.py`) — la app no decide nada por su cuenta, solo refleja lo que la API ya exige:
+
+| Rol | Cómo se identifica | Puede hacer |
+|---|---|---|
+| **Administrador** | `is_staff = true` en Django | Acceso total: crear, editar y eliminar en los 25 módulos, gestionar usuarios, auditoría, contenido público y reglas de negocio. |
+| **Operador** | Pertenece al grupo Django "Operadores" | Crear/editar en los módulos operativos (vuelos, aeronaves, pasajeros, reservas, etc.), sin poder eliminar ni acceder a módulos exclusivos de admin (auditoría, sesiones, usuarios). |
+| **Pasajero / usuario normal** | Cuenta autenticada sin rol especial | Consulta pública + privada de solo lectura de sus propios datos, búsqueda y reserva de vuelos a su propio nombre, gestión de su perfil. |
+
+El botón de eliminar solo se renderiza si el usuario es administrador (en los 25 módulos), y 15 de los 25 formularios se muestran deshabilitados con el aviso *"Solo un administrador puede crear o editar registros en este módulo"* si el usuario no tiene permiso — coincide exactamente con lo que el backend permite o rechaza.
 
 ## Requisitos
 
 - Flutter SDK 3.3 o superior (probado con Flutter 3.44.x)
 - Un dispositivo/emulador Android o iOS, o Chrome/Windows para pruebas de escritorio
-- Backend SkyOps corriendo (local o desplegado) — repositorio del backend por separado
+- Backend SkyOps corriendo (local o desplegado)
 
 ## Instalación
 
 ```bash
-git clone https://github.com/mateoalba/skyops_ejemplo.git
-cd skyops_ejemplo
+git clone https://github.com/mateoalba/SkyOps---Flutter.git
+cd SkyOps---Flutter
 flutter pub get
 flutter run
 ```
@@ -21,15 +128,12 @@ flutter run
 
 La URL base del backend se define en **un único lugar**:
 
-```
-lib/core/config/app_config.dart
-```
-
 ```dart
+// lib/core/config/app_config.dart
 static const String baseUrl = 'http://147.182.179.6/api';
 ```
 
-Cambia ese valor según dónde estés probando:
+Cámbiala según dónde estés probando:
 
 | Escenario | URL |
 |---|---|
@@ -42,123 +146,33 @@ No hay que tocar ningún otro archivo: todos los repositorios y el interceptor d
 
 ## Credenciales de prueba
 
-Depende de contra qué backend estés probando:
-
-**Backend local (tu máquina, corriendo `manage.py runserver`).** El script `crear_grupos.py` crea usuarios de ejemplo para los tres roles:
-
 | Usuario | Contraseña | Rol |
 |---|---|---|
-| `operador1` | `Operador123!` | Grupo **Operadores** (crear/editar, sin eliminar) |
-| `usuario1` | `Usuario123!` | Usuario normal (solo lectura / sus propios datos) |
+| `operador1` | `Operador123!` | Operador (crear/editar, sin eliminar) |
+| `usuario1` | `Usuario123!` | Usuario normal (pasajero) |
 
-Para el rol **Administrador**, usa un usuario con `is_staff=True` (creado con `python manage.py createsuperuser`, o marcado como staff desde `/admin/`).
+Para el rol **Administrador**, usa una cuenta con `is_staff = true` (creada con `python manage.py createsuperuser` en el backend, o marcada como staff desde `/admin/`).
 
-**Backend desplegado (`http://147.182.179.6/api`).** Ahí normalmente solo existe el superusuario que creó quien desplegó el servidor — `crear_grupos.py` no se ha corrido en esa base de datos, así que `operador1`/`usuario1` **no existen** ahí. Para probar los tres roles contra el servidor desplegado:
-
-1. **Admin**: inicia sesión con las credenciales del superusuario (pídeselas a quien desplegó el backend, o créalas tú si tienes acceso al servidor).
-2. **Usuario normal (sin rol especial)**: usa el botón "Crear cuenta" dentro de la propia app — llama a `POST /auth/registro/` real contra el servidor desplegado y crea una cuenta nueva, sin necesidad de sembrar datos. Sirve para probar las restricciones de un usuario no-admin.
-3. **Operador** (grupo "Operadores" específicamente): no hay forma de auto-asignarse ese grupo desde la app — alguien con acceso al servidor debe correr `crear_grupos.py` contra esa base de datos, o agregar al usuario al grupo "Operadores" desde `/admin/` de Django.
-
-## Estructura del proyecto
-
-```
-lib/
-├── main.dart                     ← arma la inyección de dependencias (Dio → Repos → Providers)
-├── data/
-│   ├── remote/{api, dto, interceptor}
-│   ├── local/secure_storage.dart
-│   └── repository/               ← implementación de cada repositorio (25 entidades + auth)
-├── domain/
-│   ├── model/                    ← modelos de dominio
-│   └── repository/                ← contratos (interfaces)
-├── presentation/
-│   ├── navigation/app_router.dart ← GoRouter con guard de sesión
-│   ├── screens/
-│   │   ├── public/                ← sección pública (sin login)
-│   │   ├── auth/                  ← splash, login, registro, perfil
-│   │   ├── home/                  ← dashboard privado + shell con nav inferior
-│   │   └── {operaciones, infraestructura, flota, personas, administracion}/
-│   ├── providers/                 ← estado (ChangeNotifier) por entidad
-│   └── widgets/
-├── theme/                         ← Material 3, paleta oscura + azul
-└── core/{config, error, utils}
-```
-
-## Navegación pública vs. privada
-
-- **Pública** (`/publico`, `/publico/modulos/:id`, `/publico/contacto`, `/login`, `/register`): accesible sin sesión. Presenta la app, describe los 5 módulos del sistema y da acceso a iniciar sesión o crear cuenta.
-- **Privada** (`/home` y todas las rutas de las 25 entidades): protegida por `GoRouter.redirect` en `app_router.dart`. Si no hay un JWT válido en `flutter_secure_storage`, cualquier intento de entrar redirige a `/login`.
-
-## Autenticación
-
-- `POST /auth/login/` → guarda `access` y `refresh` en `flutter_secure_storage`.
-- Interceptor de Dio (`auth_interceptor.dart`) agrega `Authorization: Bearer <token>` a cada request privado.
-- En un `401`, el interceptor intenta refrescar el token automáticamente con `POST /auth/refresh/`; si falla, limpia la sesión.
-- `Logout` invalida el refresh token en el backend (`POST /auth/logout/`) y borra el almacenamiento local.
-
-## Roles y reglas de negocio (control de acceso real)
-
-El backend Django expone permisos reales por endpoint (`airport/permissions.py`), no solo un campo de texto. Desde el perfil (`/auth/perfil/`) solo es posible verificar de forma confiable si el usuario es **administrador** (`is_staff`); esa es la señal que usa la app para habilitar o esconder acciones — **no es un texto decorativo**, condiciona lo que se renderiza:
-
-- **Eliminar** un registro: el botón de eliminar (ícono de basurero) **solo aparece si el usuario autenticado es administrador**, en las 25 entidades — coincide exactamente con la regla del backend (`DELETE` siempre exige `is_staff`).
-- **Crear/editar**: en 15 de los 25 módulos (terminales, pistas, horarios, escalas, asignaciones de pista, categorías de pasajero, equipajes, notificaciones, tarjetas de embarque, tipos de aeronave, mantenimientos, certificaciones, perfiles de usuario, sesiones de usuario y auditoría) el backend exige `is_staff` también para crear/editar — en esos módulos el botón "nuevo" se oculta y el formulario se muestra deshabilitado (con aviso "Solo un administrador puede crear o editar registros en este módulo") si el usuario no es admin.
-- En los 10 módulos restantes (vuelos, aerolíneas, aeropuertos, aeronaves, puertas, pasajeros, tripulantes, asignaciones de tripulación, incidentes y reservas) cualquier usuario autenticado (operador o admin) puede crear/editar, y solo el admin puede eliminar.
-- Registro de auditoría y sesiones de usuario son de solo administrador incluso para **ver** el listado (el backend rechaza el `GET` a usuarios no-staff); si un usuario no-admin entra ahí, la pantalla muestra el mensaje de error real devuelto por la API en vez de una lista vacía silenciosa.
-
-## ⚠️ Migración pendiente en el servidor desplegado
-
-Mientras trabajaba en esto encontré que 5 de las 25 tablas (**perfiles-usuario, sesiones-usuario, audit-log, mantenimientos, certificaciones**) nunca se migraron en Django — el modelo existía en el código pero no la tabla en la base de datos, así que esos 5 endpoints devolvían error 500. También conecté sus rutas en `urls.py`, que tampoco estaban registradas. Ya está corregido en el código del backend (`airport/models/__init__.py`, `airport/views/__init__.py`, `airport/urls.py`, migración `0008_auditlog_certificaciontripulante_and_more.py`), pero **alguien con acceso al servidor debe aplicar la migración ahí**:
-
-```bash
-git pull
-python manage.py migrate
-```
-
-Sin ese paso, esos 5 módulos van a seguir fallando en el servidor desplegado aunque el código de Flutter y Django ya estén corregidos localmente.
-
-## Registro de cuenta y perfil extendido
-
-El formulario de "Crear cuenta" ahora pide, además de usuario/correo/contraseña: país de residencia, tipo y número de documento, nombre(s), apellidos, fecha de nacimiento, género y teléfono. Estos datos se guardan en un `PerfilUsuario` (modelo Django) vinculado al usuario, con `cargo='usuario'` por defecto (para diferenciarlo de cuentas de staff creadas por un admin). Todos los campos de perfil son opcionales a nivel de backend — si el formulario cambia, no se rompe el registro.
-
-## Configurar Google Sign-In
-
-El botón "Continuar con Google" / "Registrarme con Google" ya está implementado en la app y en el backend (`POST /auth/google/`), pero necesita credenciales reales de Google para funcionar. Mientras no estén configuradas, el botón muestra un aviso ("Login con Google no está configurado todavía") en vez de fallar.
-
-Pasos para activarlo:
-
-1. Entra a [Google Cloud Console](https://console.cloud.google.com/) → crea un proyecto (o usa uno existente) → **APIs & Services → Credentials**.
-2. Crea un **OAuth 2.0 Client ID** de tipo **"Web application"** (este es el que verifica el backend). Copia el Client ID generado (termina en `.apps.googleusercontent.com`).
-3. **Backend**: agrega esa variable al `.env` del servidor:
-   ```
-   GOOGLE_OAUTH_CLIENT_ID=tu-client-id.apps.googleusercontent.com
-   ```
-4. **Flutter**: pega el mismo Client ID en `lib/core/config/app_config.dart`:
-   ```dart
-   static const String googleServerClientId = 'tu-client-id.apps.googleusercontent.com';
-   ```
-5. **Android**: crea además un OAuth Client ID de tipo **"Android"** en la misma consola, con el package name (`com.skyops.skyops` o el que tengas en `android/app/build.gradle.kts`) y el SHA-1 de tu certificado de firma (`cd android && ./gradlew signingReport` te lo muestra). No hace falta pegar este Client ID en ningún lado del código — Google lo asocia automáticamente por package name + SHA-1.
-6. **iOS** (si aplica): crea un Client ID tipo "iOS", agrega el `REVERSED_CLIENT_ID` como URL scheme en `ios/Runner/Info.plist` (ver documentación del paquete `google_sign_in`).
-
-Sin el paso 3, el endpoint del backend responde `503 Login con Google no está configurado en el servidor` aunque la app sí mande el token.
-
-## Manejo de estados y UX
-
-- `LoadingOverlay` en cada pantalla que consume la API.
-- `SnackBar` de éxito/error en cada crear, editar y eliminar.
-- Validaciones en formularios (`core/utils/validators.dart`): campos requeridos y numéricos.
-- Diálogo de confirmación antes de eliminar (`confirm_delete_dialog.dart`).
+Si estás probando contra el servidor desplegado y esas cuentas no existen ahí, puedes crear una cuenta de pasajero nueva desde el botón "Crear cuenta" de la propia app (llama al registro real de la API).
 
 ## Comandos útiles
 
 ```bash
 flutter pub get          # instalar dependencias
 flutter run               # correr en el dispositivo/emulador conectado
-flutter run -d chrome     # correr en el navegador
+flutter run -d chrome      # correr en el navegador
 flutter build apk         # generar APK de release
+flutter analyze           # verificar errores de compilación/lint
 ```
 
 ## Evidencia funcional
 
-Ver `EVIDENCIA.md` para el guion de grabación y la lista de capturas obligatorias.
-#   S k y O p s - - - F l u t t e r  
- 
+Ver [`EVIDENCIA.md`](./EVIDENCIA.md) para el guion de grabación del video y la lista de capturas obligatorias de la rúbrica.
+
+## Equipo
+
+Proyecto desarrollado en equipo, dividido por módulos funcionales:
+
+- **Mateo Alba** — Operaciones de vuelo e Infraestructura
+- **Marcelo Bacon** — Flota y mantenimiento + Pasajeros y personal
+- **Heymi de la Cruz** — Administración del sistema + Autenticación
