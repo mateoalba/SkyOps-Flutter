@@ -31,7 +31,10 @@ class ReservaProvider extends ChangeNotifier {
   Future<bool> crear(Reserva item) async {
     try {
       final creado = await _repo.crear(item);
-      items = [...items, creado];
+      // Al frente de la lista: el backend ordena por -reservado_en (más
+      // reciente primero), así que una reserva nueva debe verse arriba,
+      // no al final.
+      items = [creado, ...items];
       notifyListeners();
       return true;
     } catch (e) {

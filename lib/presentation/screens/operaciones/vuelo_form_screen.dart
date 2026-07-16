@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/model/vuelo.dart';
 import '../../../domain/model/aeropuerto.dart';
+import '../../../domain/model/aeronave.dart';
 import '../../providers/vuelo_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/aerolinea_provider.dart';
@@ -10,7 +11,10 @@ import '../../providers/aeronave_provider.dart';
 import '../../providers/aeropuerto_provider.dart';
 import '../../providers/puerta_provider.dart';
 import '../../widgets/loading_overlay.dart';
+import '../../widgets/seat_map.dart';
 import '../../../theme/app_colors.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/utils/precios.dart';
 
 /// Formulario para crear (o editar) un vuelo, con el mismo lenguaje visual
 /// que la pantalla de detalle: tarjeta redondeada, campos compactos y
@@ -39,12 +43,18 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
   DateTime? _llegadaReal;
   String _estado = 'programado';
   final _duracionMinCtrl = TextEditingController();
+  final _precioBaseCtrl = TextEditingController();
+  Set<String> _asientosPrimera = {};
+  Set<String> _asientosEjecutiva = {};
 
   bool get _esEdicion => widget.id != null;
 
   @override
   void initState() {
     super.initState();
+    // Para que el precio de cada clase (económica/ejecutiva/primera) se
+    // recalcule en vivo mientras el admin escribe el precio base.
+    _precioBaseCtrl.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) => _inicializar());
   }
 
@@ -52,6 +62,7 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
   void dispose() {
     _numeroVueloCtrl.dispose();
     _duracionMinCtrl.dispose();
+    _precioBaseCtrl.dispose();
     super.dispose();
   }
 
@@ -82,6 +93,9 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
           _llegadaReal = e!.llegadaReal;
           _estado = e!.estado;
           _duracionMinCtrl.text = e!.duracionMin?.toString() ?? '';
+          _precioBaseCtrl.text = e!.precioBase > 0 ? e!.precioBase.toStringAsFixed(0) : '';
+          _asientosPrimera = Set.from(e!.asientosPrimera);
+          _asientosEjecutiva = Set.from(e!.asientosEjecutiva);
         });
       }
     }
@@ -145,6 +159,115 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
     );
   }
 
+  /// Abre el mapa de asientos en modo selección múltiple para que el admin
+  /// elija exactamente qué asientos pertenecen a [clase] ('primera' o
+  /// 'ejecutiva'). Requiere una aeronave elegida para saber la capacidad
+  /// (cuántos asientos dibujar). Los asientos ya asignados a la otra clase
+  /// se muestran bloqueados para que no se solapen.
+  Future<void> _asignarAsientos({
+    required String clase,
+    required String etiqueta,
+    required Color color,
+    required List<Aeronave> aeronaves,
+  }) async {
+    if (_aeronave == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona primero la aeronave para conocer su capacidad de asientos')),
+      );
+      return;
+    }
+    int capacidad;
+    try {
+      capacidad = aeronaves.firstWhere((a) => a.id == _aeronave).capacidad;
+    } catch (_) {
+      capacidad = 150;
+    }
+
+    final actual = clase == 'primera' ? _asientosPrimera : _asientosEjecutiva;
+    final otraClase = clase == 'primera' ? _asientosEjecutiva : _asientosPrimera;
+    final seleccionTemp = Set<String>.from(actual);
+
+    final resultado = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Asignar asientos · $etiqueta', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toca los asientos que quieras reservar para esta clase. ${seleccionTemp.length} asientos elegidos.',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    SeatMap(
+                      capacidad: capacidad,
+                      modoAsignacion: true,
+                      asientosSeleccionados: seleccionTemp,
+                      asientosOtraClase: otraClase,
+                      colorAsignacion: color,
+                      onToggle: (codigo) => setModalState(() {
+                        if (seleccionTemp.contains(codigo)) {
+                          seleccionTemp.remove(codigo);
+                        } else {
+                          seleccionTemp.add(codigo);
+                        }
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(seleccionTemp),
+                            child: const Text('Guardar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (resultado != null) {
+      setState(() {
+        if (clase == 'primera') {
+          _asientosPrimera = resultado;
+          _asientosEjecutiva = _asientosEjecutiva.difference(resultado);
+        } else {
+          _asientosEjecutiva = resultado;
+          _asientosPrimera = _asientosPrimera.difference(resultado);
+        }
+      });
+    }
+  }
+
   Future<void> _guardar() async {
     if (_aerolinea == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona la aerolínea')));
@@ -181,6 +304,9 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
       llegadaReal: _llegadaReal,
       estado: _estado,
       duracionMin: int.tryParse(_duracionMinCtrl.text.trim()),
+      precioBase: double.tryParse(_precioBaseCtrl.text.trim()) ?? 0,
+      asientosPrimera: _asientosPrimera,
+      asientosEjecutiva: _asientosEjecutiva,
     );
 
     final provider = context.read<VueloProvider>();
@@ -448,6 +574,65 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
                     Container(height: 1, color: AppColors.surfaceVariant),
                     const SizedBox(height: 16),
                     const Text(
+                      'PRECIO Y CLASES DE CABINA',
+                      style: TextStyle(fontSize: 10, letterSpacing: 0.4, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _precioBaseCtrl,
+                      enabled: puedeEscribir,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      decoration: _decoracionCompacta('Precio base (económica)', ayuda: 'Ejecutiva x1.8 y primera x2.5 se calculan solas'),
+                    ),
+                    const SizedBox(height: 14),
+                    Builder(builder: (context) {
+                      final precioBase = double.tryParse(_precioBaseCtrl.text.trim()) ?? 0;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _FilaClase(
+                            color: AppColors.surfaceVariant,
+                            etiqueta: 'Económica',
+                            precio: precioBase,
+                          ),
+                          const SizedBox(height: 10),
+                          _FilaClase(
+                            color: AppColors.secondary,
+                            etiqueta: 'Ejecutiva',
+                            precio: precioPorClase(precioBase, 'ejecutiva'),
+                            subtitulo: '${_asientosEjecutiva.length} asientos asignados',
+                            onAsignar: !puedeEscribir
+                                ? null
+                                : () => _asignarAsientos(
+                                      clase: 'ejecutiva',
+                                      etiqueta: 'Ejecutiva',
+                                      color: AppColors.secondary,
+                                      aeronaves: opcAeronave,
+                                    ),
+                          ),
+                          const SizedBox(height: 10),
+                          _FilaClase(
+                            color: AppColors.warning,
+                            etiqueta: 'Primera clase',
+                            precio: precioPorClase(precioBase, 'primera'),
+                            subtitulo: '${_asientosPrimera.length} asientos asignados',
+                            onAsignar: !puedeEscribir
+                                ? null
+                                : () => _asignarAsientos(
+                                      clase: 'primera',
+                                      etiqueta: 'Primera clase',
+                                      color: AppColors.warning,
+                                      aeronaves: opcAeronave,
+                                    ),
+                          ),
+                        ],
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    Container(height: 1, color: AppColors.surfaceVariant),
+                    const SizedBox(height: 16),
+                    const Text(
                       'ESTADO',
                       style: TextStyle(fontSize: 10, letterSpacing: 0.4, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                     ),
@@ -469,6 +654,76 @@ class _VueloFormScreenState extends State<VueloFormScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Fila que muestra una clase de cabina (Económica/Ejecutiva/Primera) con
+/// su precio calculado y, para las clases restringibles, un botón para
+/// abrir el mapa de asientos y elegir cuáles pertenecen a esa clase.
+class _FilaClase extends StatelessWidget {
+  final Color color;
+  final String etiqueta;
+  final double precio;
+  final String? subtitulo;
+  final VoidCallback? onAsignar;
+
+  const _FilaClase({
+    required this.color,
+    required this.etiqueta,
+    required this.precio,
+    this.subtitulo,
+    this.onAsignar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.surfaceVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(etiqueta, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 3),
+                Text(
+                  Formatters.precio(precio),
+                  style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 19, height: 1),
+                ),
+                if (subtitulo != null) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitulo!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                ],
+              ],
+            ),
+          ),
+          if (onAsignar != null)
+            OutlinedButton.icon(
+              onPressed: onAsignar,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: color,
+                side: BorderSide(color: color),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              icon: const Icon(Icons.event_seat_outlined, size: 16),
+              label: const Text('Asignar asientos'),
+            ),
+        ],
       ),
     );
   }

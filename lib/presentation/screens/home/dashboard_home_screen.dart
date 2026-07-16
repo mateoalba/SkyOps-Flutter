@@ -268,11 +268,18 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Próximos vuelos', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
-                          GestureDetector(
-                            onTap: widget.onVerTodosVuelos ?? () => context.push('/vuelos'),
-                            child: const Text(
-                              'VER TODOS',
-                              style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(6),
+                              onTap: widget.onVerTodosVuelos ?? () => context.push('/vuelos'),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                child: Text(
+                                  'VER TODOS',
+                                  style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -754,6 +761,25 @@ class _BuscadorEstado extends StatelessWidget {
                   Icon(Icons.flight_land, size: 18, color: AppColors.textSecondary),
                   SizedBox(width: 10),
                   Text('Destino', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onBuscar,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.confirmation_number_outlined, size: 18, color: AppColors.textSecondary),
+                  SizedBox(width: 10),
+                  Text('Número o código de vuelo', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 ],
               ),
             ),

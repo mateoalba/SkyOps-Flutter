@@ -82,7 +82,10 @@ class _TarjetaEmbarqueFormScreenState extends State<TarjetaEmbarqueFormScreen> {
           (r) => r.id == reservaId,
           orElse: () => throw StateError('no encontrada'),
         );
-    _asientoCtrl.text = reserva.numeroAsiento;
+    // Una reserva puede cubrir varios asientos (grupo de pasajeros); la
+    // tarjeta de embarque es de UN pasajero, así que se autocompleta con
+    // el primero y el admin puede corregirlo si corresponde a otro.
+    _asientoCtrl.text = reserva.asientos.isNotEmpty ? reserva.asientos.first : reserva.numeroAsiento;
 
     Vuelo? vuelo;
     try {

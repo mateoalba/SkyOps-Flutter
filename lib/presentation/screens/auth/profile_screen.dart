@@ -160,22 +160,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Positioned(
                             bottom: -2,
                             right: -2,
-                            child: GestureDetector(
+                            child: Material(
+                              color: AppColors.buttonDark,
+                              shape: const CircleBorder(side: BorderSide(color: AppColors.background, width: 2)),
+                              child: InkWell(
+                              customBorder: const CircleBorder(),
                               onTap: _subiendoFoto ? null : _elegirFoto,
-                              child: Container(
+                              child: SizedBox(
                                 width: 32,
                                 height: 32,
-                                decoration: BoxDecoration(
-                                  color: AppColors.buttonDark,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.background, width: 2),
-                                ),
                                 child: _subiendoFoto
                                     ? const Padding(
                                         padding: EdgeInsets.all(7),
                                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                       )
                                     : const Icon(Icons.edit, size: 15, color: Colors.white),
+                              ),
                               ),
                             ),
                           ),

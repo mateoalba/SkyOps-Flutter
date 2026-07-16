@@ -19,6 +19,25 @@ class Reserva {
   final String? pasajeroApellido;
   final String? claseDisplay;
   final String? estadoDisplay;
+  final double precio;
+
+  // Una reserva puede cubrir un grupo: pasajerosAdultos siempre >= 1 (el
+  // titular), pasajerosNinos y pasajerosBebes opcionales. numeroAsiento
+  // guarda un asiento por cada adulto+niño (los bebés no ocupan asiento),
+  // separados por coma — ver el getter [asientos].
+  final int pasajerosAdultos;
+  final int pasajerosNinos;
+  final int pasajerosBebes;
+
+  int get totalPasajeros => pasajerosAdultos + pasajerosNinos + pasajerosBebes;
+
+  /// Lista de códigos de asiento individuales (ej. ["12A", "12B"]),
+  /// separando por coma el valor crudo de [numeroAsiento].
+  List<String> get asientos => numeroAsiento
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .where((s) => s.isNotEmpty)
+      .toList();
 
   const Reserva({
     this.id,
@@ -36,6 +55,10 @@ class Reserva {
     this.pasajeroApellido,
     this.claseDisplay,
     this.estadoDisplay,
+    this.precio = 0,
+    this.pasajerosAdultos = 1,
+    this.pasajerosNinos = 0,
+    this.pasajerosBebes = 0,
   });
 
   factory Reserva.fromJson(Map<String, dynamic> json) {
@@ -55,6 +78,12 @@ class Reserva {
       pasajeroApellido: json['pasajero_apellido'] as String?,
       claseDisplay: json['clase_display'] as String?,
       estadoDisplay: json['estado_display'] as String?,
+      // DRF serializa DecimalField como texto ("150000.00") para no perder
+      // precisión, así que se parsea siempre desde String por seguridad.
+      precio: double.tryParse(json['precio']?.toString() ?? '') ?? 0,
+      pasajerosAdultos: (json['pasajeros_adultos'] as num?)?.toInt() ?? 1,
+      pasajerosNinos: (json['pasajeros_ninos'] as num?)?.toInt() ?? 0,
+      pasajerosBebes: (json['pasajeros_bebes'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -66,6 +95,9 @@ class Reserva {
       'clase': clase,
       'estado': estado,
       'codigo_reserva': codigoReserva,
+      'pasajeros_adultos': pasajerosAdultos,
+      'pasajeros_ninos': pasajerosNinos,
+      'pasajeros_bebes': pasajerosBebes,
       if (reservadoEn != null) 'reservado_en': reservadoEn!.toIso8601String(),
     };
   }
@@ -79,6 +111,9 @@ class Reserva {
     String? estado,
     String? codigoReserva,
     DateTime? reservadoEn,
+    int? pasajerosAdultos,
+    int? pasajerosNinos,
+    int? pasajerosBebes,
   }) {
     return Reserva(
       id: id ?? this.id,
@@ -89,6 +124,9 @@ class Reserva {
       estado: estado ?? this.estado,
       codigoReserva: codigoReserva ?? this.codigoReserva,
       reservadoEn: reservadoEn ?? this.reservadoEn,
+      pasajerosAdultos: pasajerosAdultos ?? this.pasajerosAdultos,
+      pasajerosNinos: pasajerosNinos ?? this.pasajerosNinos,
+      pasajerosBebes: pasajerosBebes ?? this.pasajerosBebes,
     );
   }
 }

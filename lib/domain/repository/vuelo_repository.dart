@@ -10,6 +10,7 @@ abstract class VueloRepository {
     String? origenCodigo,
     String? destinoCodigo,
     DateTime? fecha,
+    String? numeroVuelo,
   });
   Future<List<String>> asientosOcupados(String vueloId);
 }

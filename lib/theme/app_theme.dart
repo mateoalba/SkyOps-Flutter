@@ -25,6 +25,11 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: colorScheme,
+      // Ripple/highlight bien visible en toda la app al tocar botones,
+      // tarjetas y pestañas — antes era casi imperceptible en grabaciones.
+      splashFactory: InkRipple.splashFactory,
+      splashColor: Colors.white.withValues(alpha: 0.18),
+      highlightColor: Colors.white.withValues(alpha: 0.08),
       textTheme: const TextTheme(
         titleLarge: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         titleMedium: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
@@ -78,6 +83,10 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.pressed) ? Colors.white.withValues(alpha: 0.22) : null,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -86,10 +95,18 @@ class AppTheme {
           side: const BorderSide(color: AppColors.primary),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.pressed) ? AppColors.primary.withValues(alpha: 0.20) : null,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+        style: TextButton.styleFrom(foregroundColor: AppColors.primary).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.pressed) ? AppColors.primary.withValues(alpha: 0.18) : null,
+          ),
+        ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,

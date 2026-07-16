@@ -184,6 +184,8 @@ class _ReservaListScreenState extends State<ReservaListScreen> {
                             horaLlegada: vueloReserva != null ? fmtHora(vueloReserva.llegadaProgramada) : null,
                             duracionMin: vueloReserva?.duracionMin,
                             fecha: _fmtFecha(item.reservadoEn),
+                            precio: item.precio,
+                            totalPasajeros: item.totalPasajeros,
                             onEliminar: esAdmin && item.id != null ? () => _eliminar(context, item.id!, item.codigoReserva) : null,
                             onTap: () => context.push('/reservas/${item.id}/editar'),
                           );

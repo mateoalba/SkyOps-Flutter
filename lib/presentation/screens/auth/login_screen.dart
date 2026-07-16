@@ -130,11 +130,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             _campoLabel('CONTRASEÑA'),
-                            GestureDetector(
-                              onTap: () {},
-                              child: const Text(
-                                '¿Olvidaste tu contraseña?',
-                                style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: () {},
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Text(
+                                    '¿Olvidaste tu contraseña?',
+                                    style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
                               ),
                             ),
                           ],

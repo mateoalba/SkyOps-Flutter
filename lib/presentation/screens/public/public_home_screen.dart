@@ -177,7 +177,9 @@ class _SlideModulo extends StatelessWidget {
     final titular = titularOverride ?? modulo.titular;
     final resumen = resumenOverride ?? modulo.resumen;
 
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
       onTap: () => context.push('/publico/modulos/${modulo.id}'),
       child: Stack(
         fit: StackFit.expand,
@@ -256,6 +258,7 @@ class _SlideModulo extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

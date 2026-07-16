@@ -8,7 +8,7 @@ class AppConfig {
   /// - Probando en EMULADOR Android: 'http://10.0.2.2:8000/api' (alias especial al localhost del host)
   /// - Probando en celular físico: 'http://<IP-de-tu-PC-en-la-red>:8000/api' (ej. 192.168.1.x)
   /// - Volviendo al servidor remoto: 'http://147.182.179.6/api'
-  static const String baseUrl = 'http://147.182.179.6/api';
+  static const String baseUrl = 'https://skyops-api.uaeftt-ute.site/api';
 
   // ---- Autenticación ----
   static const String loginEndpoint = '/auth/login/';

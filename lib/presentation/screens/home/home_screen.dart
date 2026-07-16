@@ -167,15 +167,20 @@ class HomeScreen extends StatelessWidget {
             Positioned(
               top: 20,
               right: 16,
-              child: GestureDetector(
-                onTap: () => context.push('/profile'),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.18),
-                  backgroundImage: tieneFoto ? NetworkImage(usuario.foto!) : null,
-                  child: !tieneFoto
-                      ? const Icon(Icons.person_outline, color: AppColors.primary, size: 28)
-                      : null,
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => context.push('/profile'),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.18),
+                    backgroundImage: tieneFoto ? NetworkImage(usuario.foto!) : null,
+                    child: !tieneFoto
+                        ? const Icon(Icons.person_outline, color: AppColors.primary, size: 28)
+                        : null,
+                  ),
                 ),
               ),
             ),

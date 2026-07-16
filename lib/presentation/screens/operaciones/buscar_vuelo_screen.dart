@@ -28,6 +28,7 @@ class _BuscarVueloScreenState extends State<BuscarVueloScreen> {
   String? _origenId;
   String? _destinoId;
   DateTime? _fecha;
+  final _numeroVueloCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -36,6 +37,12 @@ class _BuscarVueloScreenState extends State<BuscarVueloScreen> {
       context.read<AeropuertoProvider>().cargar();
       context.read<AerolineaProvider>().cargar();
     });
+  }
+
+  @override
+  void dispose() {
+    _numeroVueloCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _elegirFecha() async {
@@ -63,6 +70,7 @@ class _BuscarVueloScreenState extends State<BuscarVueloScreen> {
           origenCodigo: codigo(_origenId),
           destinoCodigo: codigo(_destinoId),
           fecha: _fecha,
+          numeroVuelo: _numeroVueloCtrl.text,
         );
   }
 
@@ -173,6 +181,13 @@ class _BuscarVueloScreenState extends State<BuscarVueloScreen> {
                       onChanged: (v) => setState(() => _destinoId = v),
                     ),
                     const SizedBox(height: 12),
+                    TextField(
+                      controller: _numeroVueloCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                      decoration: _decoracionPill('Número o código de vuelo (ej. AV205)', Icons.confirmation_number_outlined),
+                    ),
+                    const SizedBox(height: 12),
                     InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: _elegirFecha,
@@ -205,12 +220,7 @@ class _BuscarVueloScreenState extends State<BuscarVueloScreen> {
                 ),
               ),
               if (!vueloProvider.buscoAlMenosUnaVez)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 60, horizontal: 24),
-                  child: Center(
-                    child: Text('Elige origen y destino y presiona "Buscar vuelos".', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
-                  ),
-                )
+                const SizedBox.shrink()
               else if (vueloProvider.errorBusqueda != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),

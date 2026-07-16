@@ -138,14 +138,19 @@ class _Encabezado extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => context.push('/menu'),
-                  child: CircleAvatar(
-                    radius: 19,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    child: Text(
-                      nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => context.push('/menu'),
+                    child: CircleAvatar(
+                      radius: 19,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      child: Text(
+                        nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ),

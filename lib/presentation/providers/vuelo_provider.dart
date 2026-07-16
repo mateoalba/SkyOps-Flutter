@@ -25,6 +25,7 @@ class VueloProvider extends ChangeNotifier {
     String? origenCodigo,
     String? destinoCodigo,
     DateTime? fecha,
+    String? numeroVuelo,
   }) async {
     buscando = true;
     errorBusqueda = null;
@@ -35,6 +36,7 @@ class VueloProvider extends ChangeNotifier {
         origenCodigo: origenCodigo,
         destinoCodigo: destinoCodigo,
         fecha: fecha,
+        numeroVuelo: numeroVuelo,
       );
     } catch (e) {
       errorBusqueda = e.toString();

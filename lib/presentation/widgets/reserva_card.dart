@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
 
 /// Tarjeta de reserva estilo "boarding pass": avatar del pasajero, PNR,
 /// franja de ruta (origen → aerolínea/vuelo → destino) y fecha de reserva.
@@ -16,6 +17,8 @@ class ReservaCard extends StatelessWidget {
   final String? horaLlegada;
   final int? duracionMin;
   final String? fecha;
+  final double? precio;
+  final int? totalPasajeros;
   final VoidCallback? onTap;
   final VoidCallback? onEliminar;
 
@@ -33,6 +36,8 @@ class ReservaCard extends StatelessWidget {
     this.horaLlegada,
     this.duracionMin,
     this.fecha,
+    this.precio,
+    this.totalPasajeros,
     this.onTap,
     this.onEliminar,
   });
@@ -100,7 +105,29 @@ class ReservaCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
                         ),
                         const SizedBox(height: 2),
-                        Text('PNR: $pnr', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Row(
+                          children: [
+                            Text('PNR: $pnr', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            if (totalPasajeros != null && totalPasajeros! > 1) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.people_alt_outlined, size: 11, color: AppColors.secondary),
+                                    const SizedBox(width: 3),
+                                    Text('$totalPasajeros', style: const TextStyle(fontSize: 11, color: AppColors.secondary, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -207,6 +234,10 @@ class ReservaCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(fecha!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const Spacer(),
+                    if (precio != null && precio! > 0) ...[
+                      Text(Formatters.precio(precio), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      const SizedBox(width: 10),
+                    ],
                     Container(
                       width: 26,
                       height: 26,

@@ -37,4 +37,19 @@ class Formatters {
     final m = v.minute.toString().padLeft(2, '0');
     return '$h:$m';
   }
+
+  /// Formato de dinero simple con separador de miles, ej. 349000 -> "$349.000".
+  /// No usa NumberFormat de intl para no depender de inicializar el locale.
+  static String precio(num? valor) {
+    if (valor == null) return '\$0';
+    final entero = valor.round();
+    final texto = entero.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < texto.length; i++) {
+      final posicionDesdeElFinal = texto.length - i;
+      if (i > 0 && posicionDesdeElFinal % 3 == 0) buffer.write('.');
+      buffer.write(texto[i]);
+    }
+    return '\$$buffer';
+  }
 }

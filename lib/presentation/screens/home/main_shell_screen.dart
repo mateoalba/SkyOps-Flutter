@@ -51,34 +51,40 @@ class _MainShellScreenState extends State<MainShellScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_iconos.length, (i) {
               final activo = i == _indice;
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _irA(i),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: activo ? AppColors.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        _iconos[i],
-                        color: activo ? Colors.white : AppColors.textSecondary,
-                        size: 22,
-                      ),
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _irA(i),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: activo ? AppColors.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            _iconos[i],
+                            color: activo ? Colors.white : AppColors.textSecondary,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _etiquetas[i],
+                          style: TextStyle(
+                            color: activo ? AppColors.primary : AppColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: activo ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _etiquetas[i],
-                      style: TextStyle(
-                        color: activo ? AppColors.primary : AppColors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: activo ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             }),

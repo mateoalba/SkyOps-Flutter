@@ -49,6 +49,7 @@ class VueloRepositoryImpl implements VueloRepository {
     String? origenCodigo,
     String? destinoCodigo,
     DateTime? fecha,
+    String? numeroVuelo,
   }) async {
     final query = <String, dynamic>{};
     if (origenCodigo != null && origenCodigo.isNotEmpty) {
@@ -56,6 +57,9 @@ class VueloRepositoryImpl implements VueloRepository {
     }
     if (destinoCodigo != null && destinoCodigo.isNotEmpty) {
       query['destino_codigo'] = destinoCodigo;
+    }
+    if (numeroVuelo != null && numeroVuelo.trim().isNotEmpty) {
+      query['numero_vuelo'] = numeroVuelo.trim();
     }
     if (fecha != null) {
       final y = fecha.year.toString().padLeft(4, '0');

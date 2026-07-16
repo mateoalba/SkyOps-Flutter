@@ -14,6 +14,13 @@ class Vuelo {
   final DateTime? llegadaReal;
   final String estado;
   final int? duracionMin;
+  final double precioBase;
+  // Asientos exactos (código "12A") asignados a cada clase — elegidos por
+  // el admin en el mapa de asientos al crear/editar el vuelo. Vacíos ambos
+  // (vuelos creados antes de esta función) = sin restricción de clase.
+  final Set<String> asientosPrimera;
+  final Set<String> asientosEjecutiva;
+  final int? capacidadAeronave;
 
   const Vuelo({
     this.id,
@@ -29,7 +36,19 @@ class Vuelo {
     this.llegadaReal,
     required this.estado,
     this.duracionMin,
+    this.precioBase = 0,
+    this.asientosPrimera = const {},
+    this.asientosEjecutiva = const {},
+    this.capacidadAeronave,
   });
+
+  static Set<String> _csvASet(dynamic valor) {
+    final texto = valor?.toString() ?? '';
+    if (texto.trim().isEmpty) return {};
+    return texto.split(',').map((s) => s.trim().toUpperCase()).where((s) => s.isNotEmpty).toSet();
+  }
+
+  static String _setACsv(Set<String> valores) => valores.join(',');
 
   factory Vuelo.fromJson(Map<String, dynamic> json) {
     return Vuelo(
@@ -46,6 +65,12 @@ class Vuelo {
       llegadaReal: json['llegada_real'] != null ? DateTime.parse(json['llegada_real'] as String) : null,
       estado: json['estado'] as String? ?? '',
       duracionMin: (json['duracion_min'] as num?)?.toInt(),
+      // DRF serializa DecimalField como texto ("0.00") para no perder
+      // precisión, así que se parsea siempre desde String por seguridad.
+      precioBase: double.tryParse(json['precio_base']?.toString() ?? '') ?? 0,
+      asientosPrimera: _csvASet(json['asientos_primera']),
+      asientosEjecutiva: _csvASet(json['asientos_ejecutiva']),
+      capacidadAeronave: (json['aeronave_capacidad'] as num?)?.toInt(),
     );
   }
 
@@ -63,6 +88,9 @@ class Vuelo {
       if (llegadaReal != null) 'llegada_real': llegadaReal!.toIso8601String(),
       'estado': estado,
       'duracion_min': duracionMin,
+      'precio_base': precioBase,
+      'asientos_primera': _setACsv(asientosPrimera),
+      'asientos_ejecutiva': _setACsv(asientosEjecutiva),
     };
   }
 
@@ -80,6 +108,10 @@ class Vuelo {
     DateTime? llegadaReal,
     String? estado,
     int? duracionMin,
+    double? precioBase,
+    Set<String>? asientosPrimera,
+    Set<String>? asientosEjecutiva,
+    int? capacidadAeronave,
   }) {
     return Vuelo(
       id: id ?? this.id,
@@ -95,6 +127,10 @@ class Vuelo {
       llegadaReal: llegadaReal ?? this.llegadaReal,
       estado: estado ?? this.estado,
       duracionMin: duracionMin ?? this.duracionMin,
+      precioBase: precioBase ?? this.precioBase,
+      asientosPrimera: asientosPrimera ?? this.asientosPrimera,
+      asientosEjecutiva: asientosEjecutiva ?? this.asientosEjecutiva,
+      capacidadAeronave: capacidadAeronave ?? this.capacidadAeronave,
     );
   }
 }
